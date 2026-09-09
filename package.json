@@ -1,0 +1,20 @@
+{
+  "name": "our-story",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A five-act cinematic film that becomes a romantic website: two paths meet, memories accumulate, and a letter turns into a birthday wish. Vanilla JS + GSAP + one canvas, no framework.",
+  "scripts": {
+    "dev": "vite",
+    "dev:phone": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "preview:phone": "vite preview --host"
+  },
+  "dependencies": {
+    "gsap": "^3.13.0"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Audio test</title>
+<style>
+  :root { color-scheme: dark }
+  body{
+    margin:0; padding:16px 14px 40px;
+    background:#0b0f1a; color:#f3e6d3;
+    font:15px/1.5 -apple-system,system-ui,sans-serif;
+  }
+  h1{ font-size:1.1rem; margin:0 0 4px }
+  p.sub{ margin:0 0 18px; color:#9aa4b8; font-size:.85rem }
+  button{
+    display:block; width:100%; min-height:52px; margin:0 0 10px;
+    font:600 16px/1 -apple-system,system-ui,sans-serif;
+    color:#f3e6d3; background:#18223a;
+    border:1px solid #2e3a58; border-radius:10px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button:active{ background:#24304e }
+  #log{
+    margin-top:16px; padding:10px; min-height:120px;
+    background:#05080f; border:1px solid #223; border-radius:8px;
+    font:12px/1.45 ui-monospace,Menlo,monospace; color:#b9e6c4;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  #state{
+    margin-top:12px; padding:10px;
+    background:#05080f; border:1px solid #223; border-radius:8px;
+    font:12px/1.5 ui-monospace,Menlo,monospace; color:#e8d9b8;
+    white-space:pre-wrap;
+  }
+  .hint{ color:#9aa4b8; font-size:.78rem; margin:14px 0 4px }
+</style>
+</head>
+<body>
+
+<h1>Audio test</h1>
+<p class="sub">Tap the buttons in order. Tell me which one you hear.</p>
+
+<button id="bC">C — beep (no file, pure Web Audio)</button>
+<button id="bA">A — song, plain element (no Web Audio)</button>
+<button id="bB">B — song, through Web Audio gain</button>
+<button id="bStop">stop everything</button>
+
+<p class="hint">live state (updates every 500ms):</p>
+<div id="state">…</div>
+
+<p class="hint">log:</p>
+<div id="log"></div>
+
+<script>
+(function(){
+  var logEl = document.getElementById('log');
+  var stateEl = document.getElementById('state');
+
+  function log(msg){
+    var t = new Date().toISOString().slice(14, 23);
+    logEl.textContent += '[' + t + '] ' + msg + '\n';
+  }
+
+  // ---- the element -------------------------------------------------
+  var a = new Audio();
+  a.src = 'music/our-song.mp3';
+  a.loop = true;
+  a.preload = 'auto';
+  a.setAttribute('playsinline', '');
+  // Attached to the DOM on purpose: a detached element is one of the
+  // things iOS is unreliable about.
+  a.style.display = 'none';
+  document.body.appendChild(a);
+
+  a.addEventListener('error', function(){
+    var e = a.error;
+    log('ELEMENT ERROR code=' + (e ? e.code : '?') + ' ' + (e ? e.message : ''));
+  });
+  a.addEventListener('loadedmetadata', function(){
+    log('loadedmetadata duration=' + a.duration.toFixed(1) + 's');
+  });
+  a.addEventListener('playing', function(){ log('event: playing'); });
+  a.addEventListener('stalled', function(){ log('event: stalled'); });
+  a.addEventListener('waiting', function(){ log('event: waiting'); });
+
+  // ---- what the browser supports ------------------------------------
+  log('UA: ' + navigator.userAgent);
+  log('canPlay mp3: "' + (a.canPlayType('audio/mpeg') || 'no') + '"');
+  log('audioSession: ' + (navigator.audioSession ? 'yes' : 'NOT SUPPORTED'));
+  a.volume = 0.5;
+  log('volume settable: ' + (a.volume === 0.5 ? 'YES' : 'NO (iOS)'));
+  a.volume = 1;
+
+  var AC = window.AudioContext || window.webkitAudioContext;
+  log('AudioContext: ' + (AC ? 'yes' : 'NOT SUPPORTED'));
+
+  var ctx = null, gain = null, srcNode = null;
+
+  // ---- C: pure Web Audio beep ---------------------------------------
+  document.getElementById('bC').addEventListener('click', function(){
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      if (!ctx) { ctx = new AC(); log('ctx created (C) state=' + ctx.state); }
+      ctx.resume();
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      g.gain.value = 0.25;
+      o.frequency.value = 440;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 1.0);
+      log('C: beep fired, ctx.state=' + ctx.state);
+    } catch (err) { log('C FAILED: ' + err); }
+  });
+
+  // ---- A: plain element, no Web Audio -------------------------------
+  document.getElementById('bA').addEventListener('click', function(){
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      a.muted = false;
+      a.volume = 1;
+      var p = a.play();
+      log('A: play() called, muted=' + a.muted);
+      if (p && p.then) p.then(function(){ log('A: play() RESOLVED'); })
+                        .catch(function(e){ log('A: play() REJECTED ' + e.name + ' — ' + e.message); });
+    } catch (err) { log('A FAILED: ' + err); }
+  });
+
+  // ---- B: element routed through a Web Audio gain --------------------
+  document.getElementById('bB').addEventListener('click', function(){
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      if (!ctx) { ctx = new AC(); log('ctx created (B) state=' + ctx.state); }
+      if (!srcNode) {
+        srcNode = ctx.createMediaElementSource(a);
+        gain = ctx.createGain();
+        gain.gain.value = 1;
+        srcNode.connect(gain);
+        gain.connect(ctx.destination);
+        log('B: graph built (element is now permanently routed)');
+      }
+      ctx.resume().then(function(){ log('B: ctx resumed state=' + ctx.state); })
+                  .catch(function(e){ log('B: resume failed ' + e); });
+      a.muted = false;
+      var p = a.play();
+      log('B: play() called');
+      if (p && p.then) p.then(function(){ log('B: play() RESOLVED'); })
+                        .catch(function(e){ log('B: play() REJECTED ' + e.name + ' — ' + e.message); });
+    } catch (err) { log('B FAILED: ' + err); }
+  });
+
+  document.getElementById('bStop').addEventListener('click', function(){
+    a.pause(); a.currentTime = 0; log('stopped');
+  });
+
+  // ---- live state ----------------------------------------------------
+  setInterval(function(){
+    stateEl.textContent =
+      'paused      : ' + a.paused + '\n' +
+      'currentTime : ' + a.currentTime.toFixed(2) + '   <-- must climb\n' +
+      'muted       : ' + a.muted + '\n' +
+      'volume      : ' + a.volume + '\n' +
+      'readyState  : ' + a.readyState + ' (4 = fully ready)\n' +
+      'networkState: ' + a.networkState + '\n' +
+      'duration    : ' + (isNaN(a.duration) ? 'unknown' : a.duration.toFixed(1)) + '\n' +
+      'ctx.state   : ' + (ctx ? ctx.state : 'no context') + '\n' +
+      'gain        : ' + (gain ? gain.gain.value : 'no gain node');
+  }, 500);
+})();
+</script>
+</body>
+</html>

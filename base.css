@@ -1,0 +1,695 @@
+/* ============================================================
+   base.css — the shared world.
+
+   Palette, type, the grain lens, the gate, the music toggle,
+   the lightbox, and the scroll lock. Everything in here is used
+   by BOTH the film and the website, which is precisely why they
+   read as one continuous piece rather than two projects.
+
+   The structure came from the original film (legacy/birthday.css).
+   The token block below is the only place colour is decided.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   PALETTE — deep navy, warm ivory, dusty rose, champagne gold.
+
+   The dark is navy but every light in front of it is warm, and
+   that pairing is the whole effect: cinematic without being cold,
+   romantic without being pink. There is no blue *accent* anywhere
+   — blue is the room, not a colour anyone notices.
+
+   Two ink families, and the distinction matters:
+     --ink / --ink-soft            text on the DARK ground
+     --ink-paper / -soft / -accent text on the CREAM paper objects
+   The letter and the polaroids are cream on purpose — against the
+   navy they read as physical things, a real sheet of paper and
+   real photographs, and a long letter in pale-on-dark is tiring
+   to read.
+
+   Change these tokens and both the film and the website follow.
+   ------------------------------------------------------------ */
+:root{
+  /* ---------- THE PALETTE ----------------------------------
+     Seven semantic tokens. This is the source of truth; change
+     a value here and the film and the website both follow.
+
+     The budget these are used to, and it is deliberate:
+       ~70% deep navy · ~20% cream/ivory · ~7% rose · ~3% gold
+     Rose and gold are ACCENTS. The moment either becomes a
+     large surface, this stops reading premium and starts
+     reading like a Valentine's template.                    */
+  --bg-primary:     #070B16;   /* deep navy, almost black    */
+  --text-primary:   #F4EBDD;   /* warm ivory — never #fff    */
+  --text-secondary: #CFC4B8;   /* soft warm gray-beige       */
+  --rose:           #C98286;   /* muted dusty rose           */
+  --rose-soft:      #DDA6A0;   /* blush, for script + glows  */
+  --gold:           #C9A66B;   /* champagne — tiny doses only */
+  --cream:          #F3E6D3;   /* light surfaces, paper      */
+
+  /* ---------- MAPPED ROLES ---------------------------------
+     The rest of the stylesheet speaks in these; they resolve
+     to the tokens above. Kept as a layer so the two vocabularies
+     stay in sync and no rule needs to know a hex code. */
+
+  /* the night, deepest to lifted */
+  --night-0:   #03060e;                /* far edges, vignette */
+  --night-1:   var(--bg-primary);      /* the ground          */
+  --night-2:   #0d1424;                /* lifted surfaces     */
+  --night-3:   #141d31;                /* cards, panels       */
+
+  /* gold, in two weights — both restrained */
+  --gold-1:    var(--gold);
+  --gold-2:    #B08F57;                /* deeper, for borders */
+  --gold-ink:  #7A5F30;                /* gold legible on cream, WCAG AA */
+
+  /* ink on the dark ground.
+     Per the brief these are steps of the SAME warm neutral, not
+     new hues — hierarchy by weight, not by colour. */
+  --ink:       var(--text-secondary);
+  --ink-soft:  #9A9086;
+
+  /* the ivory paper objects, and the ink for them */
+  --paper-0:   var(--text-primary);    /* brightest text      */
+  --paper-1:   var(--cream);           /* paper surfaces      */
+  --paper-2:   var(--text-secondary);  /* dimmed light on dark */
+  --ink-paper:      #2A2018;           /* warm brown-black on cream */
+  --ink-paper-soft: #6E6052;           /* WCAG AA on cream */
+  --ink-paper-accent: #8C4A50;         /* deep rose for script on cream */
+
+  /* ---------- TYPE ------------------------------------------
+     Two families, and the contrast between them is the system:
+
+       --font-display  Cormorant Garamond — emotion and story.
+                       Headings, the film's statements, memory
+                       titles, the letter, the wish. Light weights
+                       at large sizes: editorial, never heavy.
+
+       --font-body     Inter — clarity and interface.
+                       Body copy, dates, metadata, buttons, the
+                       gate controls, every small label.
+
+     Nothing here is decorative-script. The letter reads as
+     handwritten through italics, spacing and the reveal
+     animation, not through a wedding-invitation typeface. */
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --ease-out:  cubic-bezier(.2,.7,.2,1);
+  --ease-soft: cubic-bezier(.33,.9,.28,1);
+
+  /* Fluid rhythm — everything is sized off the viewport so 390px
+     and 1440px both get sensible proportions from one rule. */
+  --gut: clamp(1.25rem, 5vw, 4rem);
+  --stack: clamp(4rem, 12vw, 9rem);
+}
+
+*{ box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ------------------------------------------------------------
+   THE SCROLL LOCK
+
+   Both overflow and overscroll-behavior live on <html> and NOT on
+   <body>, and that placement is load-bearing — getting it wrong
+   silently kills scrolling everywhere:
+
+     `overflow-x: hidden` on an element makes its `overflow-y`
+     compute to `auto`, not `visible`. Put it on <body> and body
+     quietly becomes a scroll container. Body has no overflow of
+     its own, so it cannot scroll — and `overscroll-behavior: none`
+     on that same body then stops the gesture chaining up to the
+     viewport. The wheel dies at body and the page never moves.
+     (window.scrollTo still works, which makes it a nasty one to
+     diagnose: it looks fine from script and is dead to the user.)
+
+   On <html> both properties propagate to the viewport, which is
+   what we actually wanted in the first place.
+   ------------------------------------------------------------ */
+html{
+  /* The film owns the viewport until it hands off. `is-open`
+     (added by main.js) is the single switch that unlocks the page. */
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior-y: none;        /* no pull-to-refresh mid-film */
+  -webkit-text-size-adjust: 100%;
+}
+html.is-open{ overflow-y: auto; overflow-x: hidden; height: auto; }
+html.is-open body{ height: auto; }
+
+body{
+  min-height: 100%;
+  background: var(--night-1);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+img{ max-width: 100%; display: block; }
+
+button{
+  font: inherit; color: inherit;
+  background: none; border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible{
+  outline: 2px solid var(--rose-soft);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.sr-only{
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+[hidden]{ display: none !important; }
+
+/* ============================================================
+   THE GRAIN LENS — one film stock over the whole experience.
+   z-index above everything, pointer-events none so it never
+   intercepts a tap.
+   ============================================================ */
+.grade{
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 90;
+}
+.grade__vignette{
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 45%,
+              rgba(0,0,0,0) 42%, rgba(4,6,13,.32) 74%, rgba(3,4,10,.6) 100%);
+}
+.grade__grain{
+  position: absolute; inset: -120px;
+  background-image: url('./assets/grain.png');
+  background-repeat: repeat;
+  opacity: .05;
+  mix-blend-mode: overlay;
+  will-change: transform;
+  animation: grain 700ms steps(1) infinite;
+}
+@keyframes grain{
+  0%   { transform: translate(0,0) }
+  25%  { transform: translate(-24px, 14px) }
+  50%  { transform: translate(18px, -20px) }
+  75%  { transform: translate(-14px, -12px) }
+  100% { transform: translate(0,0) }
+}
+
+/* ============================================================
+   THE GATE
+   ============================================================ */
+.gate{
+  position: fixed; inset: 0;
+  z-index: 80;
+  display: grid; place-items: center;
+  padding: var(--gut);
+  background:
+    radial-gradient(ellipse at 50% 40%, var(--night-2) 0%, var(--night-0) 70%);
+  text-align: center;
+}
+.gate.is-leaving{
+  opacity: 0;
+  transition: opacity .9s var(--ease-out);
+  pointer-events: none;
+}
+.gate__inner{ max-width: 30rem; width: 100%; }
+
+.gate__burst{
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+.gate__intro{
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 4.8vw, 1.6rem);
+  color: var(--rose-soft);
+  margin-bottom: .6em;
+  opacity: 0;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: .02em;
+  line-height: 1.3;
+}
+.gate__question{
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.5rem, 6vw, 2.2rem);
+  line-height: 1.25;
+  color: var(--text-primary);
+  letter-spacing: -.005em;
+  opacity: 0;
+}
+.gate__form{
+  margin-top: clamp(2rem, 7vw, 3rem);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1.25rem;
+  opacity: 0;
+}
+.gate__input{
+  width: 100%; max-width: 22rem;
+  padding: .85rem .5rem;
+  font-family: var(--font-body);
+  font-size: 1.05rem;                 /* ≥16px, or iOS zooms on focus */
+  text-align: center;
+  color: var(--paper-0);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(244,235,221,.2);
+  transition: border-color .4s var(--ease-out);
+  font-weight: 400;
+  letter-spacing: .02em;
+}
+.gate__input:focus{
+  outline: none;
+  border-bottom-color: var(--rose-soft);
+}
+.gate__input::placeholder{ color: rgba(244,235,221,.24) }
+
+.gate__submit{
+  min-height: 44px;                    /* thumb-sized, per the brief */
+  padding: .6rem 2.2rem;
+  font-family: var(--font-body);
+  font-size: .92rem;
+  letter-spacing: .05em;
+  text-transform: lowercase;
+  color: var(--text-primary);
+  border: 1px solid rgba(244,235,221,.18);
+  border-radius: 999px;
+  /* transform is in here for the chase: the button glides away rather
+     than teleporting, and glides home again when it gives in. */
+  transition: background-color .4s var(--ease-out), border-color .4s var(--ease-out),
+              transform .34s cubic-bezier(.2,.85,.25,1);
+  font-weight: 500;
+  will-change: transform;
+  /* On touch the tap IS the escape (gate.js, onGrab), so the browser must
+     not sit on it waiting to see whether a double-tap-to-zoom is coming.
+     Without this the dodge lands a few hundred ms late and reads as lag. */
+  touch-action: manipulation;
+}
+.gate__submit:hover,
+.gate__submit:focus-visible{
+  background: rgba(201,130,134,.16);
+  border-color: var(--rose);
+}
+
+/* Four beats between her tap and the film — a held breath.
+   The count is in gate.js (BEATS); keep the two in step if you
+   change it, or the gate will fade mid-pulse. */
+.gate__submit.is-entering{
+  pointer-events: none;
+  color: var(--text-primary);
+  animation: gateBeat 420ms var(--ease-out) 4;
+}
+@keyframes gateBeat{
+  0%   { transform: scale(1);    border-color: rgba(244,235,221,.18);
+         box-shadow: 0 0 0 0 rgba(221,166,160,.4); }
+  30%  { transform: scale(1.055); border-color: var(--rose-soft); }
+  100% { transform: scale(1);    border-color: rgba(244,235,221,.18);
+         box-shadow: 0 0 0 16px rgba(221,166,160,0); }
+}
+@media (prefers-reduced-motion: reduce){
+  .gate__submit.is-entering{ animation: none; border-color: var(--rose-soft) }
+}
+
+.gate__hint{
+  margin-top: 1.5rem;
+  min-height: 1.6em;
+  font-size: .88rem;
+  font-style: normal;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity .5s var(--ease-out);
+  font-family: var(--font-body);
+  font-weight: 400;
+  letter-spacing: .01em;
+}
+.gate__hint.is-shown{ opacity: .85 }
+
+/* A gentle shake — never a red error. She should feel teased, not told off. */
+.gate__form.is-wrong{ animation: shake .5s var(--ease-out) }
+@keyframes shake{
+  0%,100%{ transform: translateX(0) }
+  20%{ transform: translateX(-9px) }
+  40%{ transform: translateX(8px) }
+  60%{ transform: translateX(-5px) }
+  80%{ transform: translateX(3px) }
+}
+
+/* ============================================================
+   THE WISH CARD — the card that opens the gift.
+
+   ⚠️ NAMED `wish-card`, NOT `wish`, and it must stay that way:
+   story.js already builds the closing birthday section as
+   <section class="wish"> and story.css styles it (see its §5).
+   A `.wish` rule here would silently land on that section too,
+   and since story.css never declares position/inset/opacity, the
+   `position: fixed; inset: 0; opacity: 0` below would leak
+   straight through and make the entire end of the site vanish.
+   Two screens, two names.
+
+   Same dark ground as the gate and the volume card, at z-index
+   81 between them, so all three cross-fade without a seam.
+
+   The type is deliberately the film's own payoff type (.a5__wish),
+   because this is the same sentence said twice: loudly here, and
+   quietly at the end of the film. If you retune one, retune both.
+   ============================================================ */
+.wish-card{
+  position: fixed; inset: 0;
+  z-index: 81;
+  display: grid; place-items: center;
+  padding: var(--gut);
+  background:
+    radial-gradient(ellipse at 50% 42%, var(--night-2) 0%, var(--night-0) 72%);
+  text-align: center;
+  opacity: 0;
+}
+.wish-card__inner{ max-width: 32rem; width: 100%; }
+
+.wish-card__title{
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 11.5vw, 5rem);
+  line-height: 1.06;
+  letter-spacing: -.015em;
+  color: var(--text-primary);
+  text-shadow: 0 0 52px rgba(221,166,160,.3);
+}
+.wish-card__greeting,
+.wish-card__name{ display: block; opacity: 0 }
+
+/* Her name, in the rose the whole project reserves for her. */
+.wish-card__name{
+  font-size: .82em;
+  color: var(--rose-soft);
+  font-style: italic;
+}
+
+/* --- the play button ---------------------------------------
+   The gate's button, again. Same pill, same hairline, same rose
+   on hover — she pressed one of these to get in, so this one
+   needs no explaining, and the two screens read as one hand.
+
+   It inherits from .gate__submit rather than restating it, so
+   retuning the gate's button retunes this one too. Only what is
+   genuinely different lives below.                              */
+.wish-card__play{
+  margin-top: clamp(2.6rem, 9vw, 4rem);
+  min-height: 44px;                    /* thumb-sized, as everywhere */
+  display: inline-flex; align-items: center;
+  gap: .7rem;
+  padding: .6rem 2rem;
+  font-family: var(--font-body);
+  font-size: .92rem;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: lowercase;
+  color: var(--text-primary);
+  background: none;
+  border: 1px solid rgba(244,235,221,.18);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;                          /* main.js fades it in */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background-color .4s var(--ease-out),
+              border-color .4s var(--ease-out),
+              transform .34s cubic-bezier(.2,.85,.25,1);
+}
+
+/* The triangle is the only thing the gate's button does not have,
+   and the only thing that says "this starts something" before she
+   has read the word next to it. */
+.wish-card__tri{
+  flex: none;
+  color: var(--rose-soft);
+  transition: color .4s var(--ease-out);
+}
+
+.wish-card__play:hover,
+.wish-card__play:focus-visible{
+  background: rgba(201,130,134,.16);
+  border-color: var(--rose);
+}
+.wish-card__play:hover .wish-card__tri,
+.wish-card__play:focus-visible .wish-card__tri{ color: var(--paper-0) }
+.wish-card__play:focus-visible{ outline: none }
+.wish-card__play:active{ transform: scale(.97) }
+
+/* The breath. A slow halo leaving the pill, forever — the screen
+   waits for her indefinitely, so it must never look like it has
+   stopped waiting. Far gentler than the gate's four beats: that
+   one is an answer, this one is an invitation. */
+.wish-card__play{ animation: wishCardBreathe 3.4s var(--ease-out) infinite }
+@keyframes wishCardBreathe{
+  0%   { box-shadow: 0 0 0 0 rgba(221,166,160,.26) }
+  70%  { box-shadow: 0 0 0 14px rgba(221,166,160,0) }
+  100% { box-shadow: 0 0 0 0 rgba(221,166,160,0) }
+}
+/* Hover replaces the breath: once she is on it, it has been found. */
+.wish-card__play:hover{ animation: none }
+
+@media (prefers-reduced-motion: reduce){
+  .wish-card__play{ animation: none }
+}
+
+/* ============================================================
+   THE VOLUME CUE — the beat between the gate and the first frame.
+
+   Deliberately the quietest screen in the whole project: one
+   icon, two lines, one hairline. It is a doorway, not a
+   destination, and anything more here would compete with the
+   film it is introducing.
+
+   It sits at z-index 82 — above the gate (80) so the two can
+   cross-fade on the same dark ground and the seam never shows,
+   and below the grain (90) so the same film stock runs over it
+   as over everything else.
+   ============================================================ */
+.cue{
+  position: fixed; inset: 0;
+  z-index: 82;
+  display: grid; place-items: center;
+  padding: var(--gut);
+  background:
+    radial-gradient(ellipse at 50% 45%, var(--night-2) 0%, var(--night-0) 72%);
+  text-align: center;
+  opacity: 0;
+  cursor: pointer;                     /* the whole card skips ahead */
+}
+.cue__inner{
+  max-width: 26rem;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+.cue__icon{
+  color: var(--rose-soft);
+  opacity: 0;
+  margin-bottom: clamp(1.4rem, 5vw, 2rem);
+}
+/* The arcs leave the speaker one after another, endlessly — the
+   visual of sound travelling, which is the thing being asked for. */
+.cue__wave{ opacity: 0; animation: cueWave 2.4s var(--ease-out) infinite }
+.cue__wave--1{ animation-delay: 0s }
+.cue__wave--2{ animation-delay: .22s }
+.cue__wave--3{ animation-delay: .44s }
+@keyframes cueWave{
+  0%       { opacity: 0;   transform: translateX(-3px) }
+  22%      { opacity: .95; transform: translateX(0) }
+  55%      { opacity: .55; transform: translateX(0) }
+  100%     { opacity: 0;   transform: translateX(2px) }
+}
+
+.cue__line{
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.45rem, 5.6vw, 2rem);
+  line-height: 1.25;
+  color: var(--text-primary);
+  letter-spacing: -.005em;
+  opacity: 0;
+}
+.cue__note{
+  margin-top: .7em;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(.98rem, 3.6vw, 1.12rem);
+  color: var(--rose-soft);
+  letter-spacing: .02em;
+  opacity: 0;
+}
+
+/* The hairline that says "this ends, and soon". 4rem of it, one
+   pixel tall — at any larger size it starts to look like a
+   download and the moment dies. */
+.cue__meter{
+  display: block;
+  width: 4rem; height: 1px;
+  margin-top: clamp(2.2rem, 8vw, 3.2rem);
+  background: rgba(244,235,221,.14);
+  overflow: hidden;
+  opacity: 0;
+}
+.cue__fill{
+  display: block;
+  width: 100%; height: 100%;
+  background: var(--rose-soft);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .cue__wave{ animation: none; opacity: .8 }
+}
+
+/* ============================================================
+   THE MUSIC TOGGLE — floats bottom-right over everything.
+   ============================================================ */
+.audio{
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 85;
+  width: 46px; height: 46px;           /* comfortably tappable */
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: rgba(7,11,22,.62);
+  border: 1px solid rgba(244,235,221,.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity .5s var(--ease-out), background-color .4s var(--ease-out);
+}
+.audio__bars{ display: flex; align-items: flex-end; gap: 3px; height: 15px }
+/* Default state is FLAT: silent unless we know sound is actually coming
+   out. The bars used to dance whenever the button wasn't muted, which
+   after a refresh meant they animated merrily over total silence — it
+   looked like a broken mute, and that is exactly how it was read. */
+.audio__bars i{
+  width: 3px; border-radius: 2px;
+  background: var(--text-primary);
+  transform-origin: bottom;
+  transform: scaleY(.25);
+  opacity: .5;
+  transition: opacity .35s var(--ease-out), transform .35s var(--ease-out);
+}
+.audio__bars i:nth-child(1){ height: 60%; animation-delay: -.2s }
+.audio__bars i:nth-child(2){ height: 100%; animation-delay: -.55s }
+.audio__bars i:nth-child(3){ height: 45%; animation-delay: -.35s }
+
+/* Only while the song is genuinely playing and not muted. */
+.audio.is-playing[aria-pressed="false"] .audio__bars i{
+  opacity: 1;
+  animation: eq 1s ease-in-out infinite;
+}
+@keyframes eq{
+  0%,100%{ transform: scaleY(.35) }
+  50%    { transform: scaleY(1) }
+}
+
+/* ============================================================
+   LIGHTBOX
+   ============================================================ */
+.lightbox{
+  position: fixed; inset: 0;
+  z-index: 95;
+  display: grid; place-items: center;
+  padding: var(--gut);
+  background: rgba(4,6,13,.96);
+  opacity: 0;
+  transition: opacity .35s var(--ease-out);
+}
+.lightbox.is-open{ opacity: 1 }
+.lightbox__fig{ max-width: min(92vw, 60rem); text-align: center }
+.lightbox__img{
+  max-height: 78svh;
+  width: auto; margin: 0 auto;
+  border-radius: 3px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.lightbox__cap{
+  margin-top: 1.1rem;
+  font-family: var(--font-body);
+  font-size: .9rem;
+  font-style: normal;
+  color: var(--paper-2);
+  font-weight: 400;
+  letter-spacing: .04em;
+}
+.lightbox__close{
+  position: absolute;
+  top: max(.75rem, env(safe-area-inset-top));
+  right: max(.75rem, env(safe-area-inset-right));
+  width: 48px; height: 48px;
+  font-size: 2rem; line-height: 1;
+  color: var(--paper-1);
+  opacity: .7;
+  z-index: 2;
+}
+.lightbox__close:hover{ opacity: 1 }
+
+/* --- paging ---------------------------------------------------
+   On a phone the arrows sit BELOW the photo rather than over it:
+   overlaying a 390px-wide image would cover the faces, and thumbs
+   reach the bottom of a screen far more easily than the sides. */
+.lightbox__count{
+  margin-top: .55rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: .72rem;
+  letter-spacing: .14em;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.lightbox__nav{
+  position: absolute;
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  width: 52px; height: 52px;          /* comfortably tappable */
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--text-primary);
+  background: rgba(7,11,22,.55);
+  border: 1px solid rgba(244,235,221,.16);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background-color .3s var(--ease-out), border-color .3s var(--ease-out);
+  z-index: 2;
+}
+.lightbox__nav--prev{ left: calc(50% - 4.6rem) }
+.lightbox__nav--next{ left: calc(50% + 1.4rem) }
+.lightbox__nav:hover, .lightbox__nav:focus-visible{
+  background: rgba(7,11,22,.82);
+  border-color: rgba(221,166,160,.45);
+}
+
+/* Wide enough to put them either side of the photo, out of the way. */
+@media (min-width: 46rem){
+  .lightbox__nav{ top: 50%; bottom: auto; transform: translateY(-50%) }
+  .lightbox__nav--prev{ left: max(1rem, env(safe-area-inset-left)) }
+  .lightbox__nav--next{ left: auto; right: max(1rem, env(safe-area-inset-right)) }
+}
+/* leave room for the arrows underneath on a phone */
+@media (max-width: 45.99rem){
+  .lightbox__img{ max-height: 66svh }
+}
+
+/* ============================================================
+   REDUCED MOTION — strip the decoration, keep every word.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  .grade__grain,
+  .audio__bars i{ animation: none !important }
+  .gate__form.is-wrong{ animation: none }
+  *, *::before, *::after{
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .12s !important;
+    scroll-behavior: auto !important;
+  }
+}

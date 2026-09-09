@@ -1,0 +1,645 @@
+/* ============================================================
+   story.css — the website the film becomes.
+
+   The first screen is a transparent spacer: the film's final
+   frame is still there, fixed behind, and she scrolls up over
+   it through a gradient that dissolves the film into paper.
+   Same palette, same type, same grain — one continuous piece.
+
+   Built at 390px. Every wider layout is an enhancement.
+   ============================================================ */
+
+.story{
+  position: relative;
+  z-index: 20;
+}
+
+/* The story exists only once the film has handed off.
+
+   This matters on REPLAY specifically: the story stays mounted (so
+   she loses no state) while the page re-locks to the top, and the
+   paper gradient below would otherwise bleed over the bottom third
+   of the restarted film. `is-open` is the same single switch that
+   unlocks scrolling, so the two can never disagree. */
+html:not(.is-open) .story{ display: none }
+
+/* The film's last frame, left alone to be looked at. */
+.story__spacer{
+  height: 100svh;                     /* svh, not vh — iOS toolbars */
+  pointer-events: none;
+}
+
+/* Paper rises out of the film rather than cutting to it. */
+.story__sheet{
+  position: relative;
+  background: var(--night-1);
+  color: var(--ink);
+}
+.story__sheet::before{
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: -34svh;
+  height: 34svh;
+  background: linear-gradient(180deg,
+    rgba(7,11,22,0) 0%,
+    rgba(7,11,22,.6) 45%,
+    rgba(7,11,22,.93) 78%,
+    var(--paper-0) 100%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   SECTIONS
+   ------------------------------------------------------------ */
+.section{
+  padding: var(--stack) var(--gut);
+  max-width: 78rem;
+  margin-inline: auto;
+}
+.section--tint{ background: linear-gradient(180deg, var(--night-1), var(--night-2) 50%, var(--night-1)) }
+
+.section__head{
+  text-align: center;
+  margin-bottom: clamp(2.5rem, 9vw, 5rem);
+}
+.section__eyebrow{
+  font-family: var(--font-body);
+  font-size: clamp(.68rem, 2.7vw, .76rem);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: .9em;
+  font-weight: 500;
+}
+.section__title{
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.6rem, 11vw, 4.6rem);
+  line-height: 1.08;
+  color: var(--rose-soft);
+  letter-spacing: -.012em;
+}
+.section__rule{
+  display: block;                     /* a <span>; without this the size is ignored */
+  width: clamp(2.5rem, 10vw, 4rem);
+  height: 1px;
+  margin: clamp(1.1rem, 4vw, 1.6rem) auto 0;
+  background: linear-gradient(90deg, transparent, var(--gold-2), transparent);
+}
+
+/* ------------------------------------------------------------
+   SCROLL REVEAL — driven by IntersectionObserver, never by a
+   scroll listener. Nothing is hidden without JS: if the observer
+   never fires, .reveal is still visible (see .no-js fallback at
+   the end of this file).
+   ------------------------------------------------------------ */
+.js .reveal{
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity .95s var(--ease-soft), transform .95s var(--ease-soft);
+}
+.js .reveal.is-in{ opacity: 1; transform: none }
+
+/* ============================================================
+   1 — OUR STORY
+   ============================================================ */
+.chapters{ display: grid; gap: clamp(4rem, 13vw, 7rem) }
+
+.chapter{
+  display: grid;
+  gap: clamp(1.25rem, 5vw, 2rem);
+  align-items: center;
+}
+@media (min-width: 52rem){
+  .chapter{ grid-template-columns: 1fr 1fr; gap: clamp(2.5rem, 5vw, 4.5rem) }
+  /* alternate sides so the eye zig-zags down the page */
+  .chapter:nth-child(even) .chapter__media{ order: 2 }
+}
+
+.chapter__media{ position: relative }
+
+.photo{
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: var(--cream);
+  border: 1px solid rgba(201,166,107,.25);
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,.36), 0 18px 40px rgba(0,0,0,.46);
+  transition: transform .6s var(--ease-soft), box-shadow .6s var(--ease-soft);
+}
+.photo img{
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;                  /* portrait and landscape both work */
+  background: var(--night-2);
+}
+@media (hover: hover){
+  .photo:hover{ transform: translateY(-4px); box-shadow: 0 4px 10px rgba(0,0,0,.40), 0 26px 56px rgba(0,0,0,.58) }
+}
+/* a photo that hasn't been added yet — never a broken-image icon */
+.photo.is-missing img{ display: none }
+.photo.is-missing::after{
+  content: attr(data-placeholder);
+  display: grid; place-items: center;
+  aspect-ratio: 4 / 3;
+  padding: 1.5rem;
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: .88rem;
+  color: var(--ink-soft);
+  background: repeating-linear-gradient(45deg,
+    var(--night-2), var(--night-2) 12px, var(--night-3) 12px, var(--night-3) 24px);
+  letter-spacing: .04em;
+}
+
+.chapter__date{
+  font-family: var(--font-body);
+  font-size: clamp(.68rem, 2.7vw, .76rem);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold-2);
+  margin-bottom: .7em;
+  font-weight: 500;
+}
+.chapter__title{
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 7vw, 2.6rem);
+  line-height: 1.12;
+  color: var(--text-primary);
+  margin-bottom: .5em;
+  text-wrap: balance;
+  letter-spacing: -.008em;
+}
+.chapter__text{
+  font-size: clamp(.96rem, 3.8vw, 1.04rem);
+  line-height: 1.75;
+  color: var(--ink);
+  max-width: 40ch;
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+
+/* ============================================================
+   2 — REASONS I LOVE YOU
+   Face-down cards she taps to turn over. Real <button>s, so the
+   keyboard and screen readers get the same experience.
+   ============================================================ */
+.reasons{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: clamp(.75rem, 3vw, 1.1rem);
+}
+.reason{
+  display: block;
+  perspective: 900px;
+  text-align: left;
+}
+
+/* The two faces are stacked in ONE grid cell rather than absolutely
+   positioned. That matters: the cell grows to whichever face is
+   taller, so a long reason can never be clipped and every card in a
+   row still lines up. (The earlier absolute-positioning version also
+   collapsed outright, because this is a <span> and an inline box
+   ignores width and height — hence the explicit display below.) */
+.reason__inner{
+  display: grid;
+  /* Fill the button, which the grid has already stretched to the
+     tallest card in its row. Without this the button stretches and
+     the CARD does not, so a row with one long reason in it draws
+     four visibly different boxes — 254px next to 152px next to
+     164px — each floating in a cell of the same size. The border
+     and background live on the faces inside here, so this is the
+     height the eye actually reads. */
+  height: 100%;
+  transition: transform .7s var(--ease-soft);
+  transform-style: preserve-3d;
+}
+.reason[aria-expanded="true"] .reason__inner{ transform: rotateY(180deg) }
+
+.reason__face{
+  grid-area: 1 / 1;                   /* both faces share the cell */
+  display: grid;
+  align-content: center;
+  gap: .5rem;
+  min-height: 9.5rem;
+  padding: clamp(1rem, 4vw, 1.35rem);
+  border-radius: 4px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.reason__face--back{
+  justify-items: center;
+  background: linear-gradient(150deg, var(--night-2), var(--night-3));
+  border: 1px solid rgba(201,166,107,.2);
+  box-shadow: 0 1px 3px rgba(0,0,0,.36), 0 10px 24px rgba(0,0,0,.36);
+}
+.reason__num{
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--gold-1);
+  opacity: .6;
+  letter-spacing: .08em;
+}
+.reason__face--front{
+  transform: rotateY(180deg);
+  background: linear-gradient(150deg, var(--night-3), var(--night-2));
+  border: 1px solid rgba(221,166,160,.3);
+  box-shadow: 0 1px 3px rgba(0,0,0,.36), 0 12px 30px rgba(0,0,0,.46);
+  font-family: var(--font-display);
+  font-size: clamp(1.08rem, 4.3vw, 1.24rem);
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink);
+  font-weight: 400;
+}
+/* In normal flow under the number, not absolutely positioned —
+   it used to escape the card and float above it. */
+.reason__hint{
+  font-family: var(--font-body);
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  opacity: .7;
+  font-weight: 500;
+}
+/* --- phones -------------------------------------------------
+   At 14rem a phone fits exactly one column, which turns 28
+   reasons into a four-thousand-pixel scroll of near-empty boxes
+   with a two-digit number in the middle of each. Two columns and
+   a shorter card give the same face-down deck the density it has
+   on a laptop, and halve the distance to the letter.
+
+   Only the sizes change here — the flip, the faces and the
+   stacking are identical, so there is one behaviour to reason
+   about, not two. */
+@media (max-width: 30rem){
+  .reasons{ grid-template-columns: repeat(2, minmax(0, 1fr)) }
+  .reason__face{
+    min-height: 7.25rem;
+    padding: .85rem .8rem;
+    gap: .35rem;
+  }
+  .reason__face--front{ font-size: 1rem; line-height: 1.45 }
+  .reason__num{ font-size: 1.2rem }
+  .reason__hint{ font-size: .58rem; letter-spacing: .1em }
+}
+
+/* Flipping is decorative; if motion is off, just swap the faces. */
+@media (prefers-reduced-motion: reduce){
+  .reason__inner{ transition: none }
+  .reason[aria-expanded="true"] .reason__inner{ transform: none }
+  .reason[aria-expanded="true"] .reason__face--back{ opacity: 0 }
+  .reason__face--front{ transform: none; opacity: 0 }
+  .reason[aria-expanded="true"] .reason__face--front{ opacity: 1 }
+}
+
+/* ============================================================
+   3 — THE LETTER
+   The same paper card the film used, so it reads as that letter,
+   continued — not a different document.
+   ============================================================ */
+.letter{
+  position: relative;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: clamp(2rem, 8vw, 4rem) clamp(1.5rem, 7vw, 3.5rem) clamp(2.5rem, 9vw, 4rem);
+  background: linear-gradient(165deg, #F8F1E4 0%, var(--cream) 100%);
+  border-radius: 3px;
+  box-shadow: 0 2px 5px rgba(0,0,0,.40), 0 26px 70px rgba(0,0,0,.52);
+}
+.letter::after{
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url('./assets/grain.png');
+  opacity: .28;
+  mix-blend-mode: multiply;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.letter__opening{
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 6vw, 2.1rem);
+  color: var(--ink-paper-accent);
+  margin-bottom: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.2;
+}
+.letter__p{
+  font-size: clamp(1.1rem, 4.4vw, 1.3rem);
+  line-height: 1.78;
+  color: var(--ink-paper);
+  margin-bottom: 1.3em;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.letter__p:last-of-type{ margin-bottom: 0 }
+.letter__signoff{
+  margin-top: clamp(2rem, 7vw, 3rem);
+  font-size: clamp(1.05rem, 4.2vw, 1.18rem);
+  font-style: italic;
+  color: var(--ink-paper-soft);
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.letter__signature{
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 6vw, 2.05rem);
+  color: var(--ink-paper-accent);
+  margin-top: .15em;
+  font-weight: 500;
+  font-style: italic;
+  letter-spacing: .01em;
+}
+
+/* ============================================================
+   4 — THE PHOTO WALL
+   ============================================================ */
+.wall{
+  display: grid;
+  /* min(45%, 11rem) guarantees at least TWO columns on a phone — a
+     flat 11rem minimum is wider than half of a 390px screen, so the
+     wall collapsed to one enormous photo per row — while still
+     capping tiles at 11rem on a wide screen. */
+  grid-template-columns: repeat(auto-fill, minmax(min(45%, 11rem), 1fr));
+  gap: clamp(.7rem, 3vw, 1.2rem);
+}
+.wall .photo img{ aspect-ratio: 1 / 1 }
+/* placeholders match the square tiles they stand in for */
+.wall .photo.is-missing::after{ aspect-ratio: 1 / 1; font-size: .8rem }
+.wall .photo{ transform: rotate(var(--tilt, 0deg)) }
+@media (hover: hover){
+  .wall .photo:hover{ transform: rotate(0deg) translateY(-4px) }
+}
+
+/* ============================================================
+   5 — THE BIRTHDAY WISH
+   ============================================================ */
+.wish{
+  padding: var(--stack) var(--gut) calc(var(--stack) + 3rem);
+  text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(201,130,134,.16), transparent 62%),
+    linear-gradient(180deg, var(--night-1), var(--night-2));
+}
+.wish__counter{
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(3.2rem, 17vw, 7rem);
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+.wish__label{
+  font-family: var(--font-body);
+  font-size: clamp(.68rem, 2.7vw, .78rem);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-top: 1em;
+  font-weight: 500;
+}
+.wish__headline{
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 12.5vw, 5.2rem);
+  line-height: 1.06;
+  color: var(--text-primary);
+  margin-top: clamp(3rem, 11vw, 5rem);
+  font-weight: 400;
+  letter-spacing: -.015em;
+}
+.wish__name{
+  display: block;
+  font-size: .84em;
+  color: var(--rose-soft);
+  font-style: italic;
+}
+.wish__message{
+  max-width: 32ch;
+  margin: clamp(1.5rem, 6vw, 2.2rem) auto 0;
+  font-size: clamp(.98rem, 3.9vw, 1.08rem);
+  font-style: normal;
+  line-height: 1.75;
+  color: var(--ink);
+  text-wrap: balance;
+  font-family: var(--font-body);
+  font-weight: 400;
+}
+/* Replay and reply sit together. Stacked on a phone so neither is a
+   thumb-stretch; side by side once there's room. A smaller gap above
+   it than the signature gets below — enough separation to read as a
+   secondary utility after the emotional cascade, not a continuation
+   of it, without opening a second big pause in the reading flow. */
+.wish__actions{
+  margin-top: clamp(1.6rem, 5.5vw, 2.4rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .9rem;
+}
+@media (min-width: 30rem){
+  .wish__actions{ flex-direction: row; justify-content: center; gap: 1rem }
+}
+
+/* The reply is the quieter of the two — it must not out-shout the
+   closing wish sitting right above it. */
+.reply{
+  min-height: 46px;
+  display: inline-flex; align-items: center;
+  padding: .75rem 1.7rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: .9rem;
+  letter-spacing: .05em;
+  text-decoration: none;
+  color: var(--text-secondary);
+  border: 1px solid rgba(244,235,221,.16);
+  border-radius: 999px;
+  transition: color .35s var(--ease-out), background-color .35s var(--ease-out),
+              border-color .35s var(--ease-out);
+}
+.reply:hover, .reply:focus-visible{
+  color: var(--rose-soft);
+  background: rgba(201,130,134,.1);
+  border-color: rgba(221,166,160,.4);
+}
+
+.replay{
+  min-height: 46px;
+  display: inline-flex; align-items: center; gap: .55rem;
+  padding: .65rem 1.6rem;
+  font-family: var(--font-body);
+  font-size: .84rem;
+  letter-spacing: .05em;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid rgba(201,166,107,.22);
+  border-radius: 999px;
+  opacity: .8;
+  transition: background-color .4s var(--ease-out), border-color .4s var(--ease-out),
+              color .4s var(--ease-out), opacity .4s var(--ease-out);
+  font-weight: 500;
+}
+.replay:hover, .replay:focus-visible{
+  background: rgba(201,130,134,.14);
+  border-color: var(--rose);
+  color: var(--rose-soft);
+  opacity: 1;
+}
+.replay__heart{ color: var(--rose); font-size: .9em }
+
+/* ------------------------------------------------------------
+   ONE MORE THING — a small last surprise, folded into the wish
+   section rather than given a chapter of its own. Quiet on
+   purpose: an underlined text trigger, not a button competing
+   with Replay above it.
+   ------------------------------------------------------------ */
+/* First beat of the ending proper — right under the closing wish,
+   so it reads as the start of one composition rather than a
+   separate, distant afterthought. Replay now follows it instead
+   of leading into it. */
+.one-more{ margin-top: clamp(2rem, 7vw, 3rem) }
+
+/* Plain text with the lightest possible underline — an invitation,
+   not a control. The tap target is still a full 44px via padding;
+   it just never draws a box around itself. */
+.one-more__trigger{
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: .5rem .2rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1rem, 3.6vw, 1.1rem);
+  color: var(--ink);
+  border-bottom: 1px solid rgba(154,144,134,.4);
+  transition: color .4s var(--ease-out), border-color .4s var(--ease-out), opacity .4s var(--ease-out);
+}
+.one-more__trigger:hover,
+.one-more__trigger:focus-visible{
+  color: var(--rose-soft);
+  border-color: var(--rose-soft);
+}
+.one-more__trigger.is-opened{ opacity: .65 }
+
+/* The photo that opens the cascade. Narrow and centred so it reads
+   as one last picture rather than a sixth wall tile, with the same
+   soft frame the rest of the page uses. It fades up first and the
+   words settle on top of it. */
+.one-more__photo{
+  width: min(clamp(200px, 58vw, 260px), 100%);
+  margin: clamp(1.4rem, 5vw, 2rem) auto 0;
+  padding: .5rem .5rem .55rem;
+  border-radius: 4px;
+  background: rgba(255,255,255,.035);
+  box-shadow: 0 14px 34px rgba(0,0,0,.32);
+  opacity: 0;
+  transform: translateY(10px) scale(.985);
+  transition: opacity 1.5s var(--ease-soft), transform 1.5s var(--ease-soft);
+}
+.one-more__photo img{
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.one-more__photo.is-in{ opacity: 1; transform: none }
+
+/* The first emotional highlight of the ending — a slower, quieter
+   fade than .reveal uses elsewhere, and visibly more present than
+   the trigger above it. */
+.one-more__message{
+  max-width: 26ch;
+  margin: clamp(1.3rem, 4.5vw, 1.8rem) auto 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.28rem, 4.9vw, 1.55rem);
+  line-height: 1.4;
+  color: var(--rose-soft);
+  text-wrap: balance;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 1.4s var(--ease-soft), transform 1.4s var(--ease-soft);
+}
+.one-more__message.is-in{ opacity: 1; transform: none }
+
+/* The personal explanation underneath the headline — medium
+   weight: smaller and cooler than the message above it, still
+   warmer and larger than the signature below it. Small gap,
+   since it belongs to the same breath as the message. */
+.one-more__note{
+  max-width: 30ch;
+  margin: clamp(1rem, 3.5vw, 1.4rem) auto 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1rem, 3.8vw, 1.15rem);
+  line-height: 1.5;
+  color: var(--ink);
+  text-wrap: balance;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1.2s var(--ease-soft), transform 1.2s var(--ease-soft);
+}
+.one-more__note.is-in{ opacity: 1; transform: none }
+
+/* The signature — small and handwritten-feeling, sitting close
+   enough underneath the note to read as signing it. */
+.one-more__signature{
+  margin-top: clamp(.6rem, 2.5vw, .9rem);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: .85rem;
+  letter-spacing: .02em;
+  color: var(--rose-soft);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 1s var(--ease-soft), transform 1s var(--ease-soft);
+}
+.one-more__signature.is-in{ opacity: .8; transform: none }
+
+/* ------------------------------------------------------------
+   SIGNATURE — the very last thing on the page. A hidden
+   signature, not a footer advert: small type, low contrast,
+   nothing to click. A comfortable but no longer excessive gap
+   above it — close enough to read as the story's final quiet
+   signature rather than a separate footer.
+   ------------------------------------------------------------ */
+.site-signature{ margin-top: clamp(1.5rem, 4.5vw, 2.1rem) }
+.site-signature__text{
+  font-family: var(--font-body);
+  font-size: .74rem;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+  opacity: .7;
+}
+.site-signature__name{
+  margin-top: .3em;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: .78rem;
+  letter-spacing: .02em;
+  color: var(--rose-soft);
+  opacity: .55;
+}
+.site-signature__date{
+  margin-top: .35em;
+  font-family: var(--font-body);
+  font-size: .68rem;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+  opacity: .5;
+}
+
+/* Nothing must be unreadable if the JS reveal never runs. */
+.no-js .reveal{ opacity: 1; transform: none }
