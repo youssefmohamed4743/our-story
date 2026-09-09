@@ -269,6 +269,35 @@ export function createAudio({ content, toggle, resolve }){
     }
   }
 
+  /* BACK TO 0:00 — the song begins where the song begins.
+
+     The unlock at the gate starts the track playing at silence, and
+     the clock starts with it. She then reads the question, types the
+     answer and looks at the wish card for as long as she likes, so by
+     the time she presses play the track can be half a minute in and
+     the swell fades up into the middle of it. The first note she hears
+     should be the first note of the song, so this rewinds while the
+     level is still at zero and nothing is audible to jump.
+
+     ONCE, and deliberately so. Unmuting calls swell() as well, and
+     restarting the song under her because she tapped the speaker
+     would be a worse bug than the one this fixes.
+
+     Seeking needs the metadata; before that arrives the assignment
+     throws, so wait for it rather than swallowing the rewind. */
+  let rewound = false;
+  function rewind(){
+    if (rewound) return;
+    rewound = true;
+    if (audio.readyState === 0){
+      audio.addEventListener('loadedmetadata', () => {
+        try { audio.currentTime = 0; } catch { /* not seekable — leave it */ }
+      }, { once: true });
+      return;
+    }
+    try { audio.currentTime = 0; } catch { /* not seekable — leave it */ }
+  }
+
   /* SOUND — the moment the song actually arrives, which is the volume
      card and nowhere earlier.
 
@@ -300,6 +329,7 @@ export function createAudio({ content, toggle, resolve }){
     // or the first instant of the song escapes at full volume as a click
     // in front of the fade.
     setLevel(0);
+    rewind();                       // first note first — see rewind() above
     audio.muted = false;
 
     audio.play().catch(() => {});   // no-op when it is already running
