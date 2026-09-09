@@ -64,12 +64,18 @@ export const CONTENT = {
   },
 
   /* --- the song -------------------------------------------
-     Drop ONE .mp3 into public/music/ and point `src` at it.
+     Drop ONE audio file into public/music/ and point `src` at
+     it. The extension must match what the file ACTUALLY is:
+     iOS Safari trusts the Content-Type the server derives from
+     it and refuses to decode a mismatch, which reads here as a
+     song that plays on every desktop and on no phone. `.m4a`
+     for AAC, `.mp3` for MPEG audio — check with `xxd -l 4`
+     if you are unsure (`ftyp` = M4A, `ID3`/0xFFFB = MP3).
      It starts when she taps to enter (browsers block audio
      before a real tap — that is enforced, not a setting).
      startVolume 0–1. 0.35 is a gentle background level.     */
   music: {
-    src: 'music/our-song.mp3',
+    src: 'music/our-song.m4a',
     title: 'Our Song',
     startVolume: 0.90,
   },
