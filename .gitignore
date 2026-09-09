@@ -13,3 +13,6 @@ Thumbs.db
 .env
 .env.*
 .vercel
+
+# full-size photo originals (kept locally, never pushed)
+photos-original/
