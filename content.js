@@ -226,6 +226,11 @@ export const CONTENT = {
       date:  'August 2026',
       text:  'No matter how much time passes, I’ll always be grateful for every moment we’ve shared. ❤️',
     },
+      {
+      photo: 'photos/33.JPG',
+      date:  'September 2026',
+      text:  'Having you by my side made this day even more special. I’d choose you to be there with me every time.❤️',
+    },
   ],
 
   /* --- the photo wall -------------------------------------
