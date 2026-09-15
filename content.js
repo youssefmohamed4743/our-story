@@ -340,8 +340,8 @@ export const CONTENT = {
      The website's five section titles. Change the wording if
      something else sounds more like you.                      */
   ui: {
-    storyEyebrow:    'Our Journey',
-    storyTitle:      'Our Story',
+    storyEyebrow:    'Our',
+    storyTitle:      'Story',
     reasonsEyebrow:  'in no particular order',
     reasonsTitle:    'Reasons I Love You',
     reasonsHint:     'tap to turn over',
