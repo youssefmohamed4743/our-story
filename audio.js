@@ -146,6 +146,12 @@ export function createAudio({ content, toggle, resolve }){
   let started = false;
   let available = true;
 
+  // Flipped by swell(), i.e. the moment the volume card arrives and the
+  // song stops being a silent permission-holder. Everything below that
+  // pauses the track while the page is hidden keys off this — see the
+  // visibilitychange block near the bottom of the file.
+  let audible = false;
+
   // A missing or unplayable file must not break anything else —
   // he may well be testing before he has picked the song.
   audio.addEventListener('error', () => {
@@ -318,6 +324,14 @@ export function createAudio({ content, toggle, resolve }){
     if (!started) start(true);      // the gesture was refused — try again now
     toggle.hidden = false;
     paint();
+
+    /* Past the gate: from here the song is hers, not a permission we are
+       holding open, so it becomes something worth pausing when she looks
+       away. Set before the muted early-return — the volume card has
+       arrived either way, and a muted visit should still come back in the
+       same state it left in rather than quietly running the whole time. */
+    audible = true;
+
     if (muted) return;              // she chose silence — leave it silent
 
     // A context can be suspended again by the browser while the page is
@@ -353,6 +367,80 @@ export function createAudio({ content, toggle, resolve }){
       // if the very first play() was refused. swell() covers both: it
       // unlocks if it must, then brings the volume up either way.
       swell(1.2);
+    }
+  });
+
+  /* ============================================================
+     SHE LOOKED AWAY — hold the song where it is.
+
+     Switching tabs, switching apps, locking the phone: all of them
+     arrive here as the document going hidden, and all of them should
+     stop the music rather than let it play on to an empty room. She
+     comes back to the note she left on, like a paused record, not to
+     a song that carried on without her.
+
+     Two things keep this honest:
+
+       audible      Nothing happens before the volume card. Until then
+                    the track is a SILENT permission-holder (see the
+                    top of this file) — there is no sound to stop, and
+                    pausing it is the one move iOS may refuse to undo,
+                    which would cost her the song for the whole visit.
+
+       pausedByHide Only un-pause what this code paused. If the song
+                    is stopped for any other reason — she muted and the
+                    fallback path stopped the element, the file died —
+                    coming back to the tab must not override that.
+
+     Position is left alone throughout: no seek, no rewind. `rewound`
+     is already spent by now, so returning cannot restart the song.
+     ============================================================ */
+  let pausedByHide = false;
+
+  /* Resuming is not a user gesture, and a browser is within its rights
+     to refuse it. It usually does not — the element has played before
+     and the page is visible again — but where it does, silence with a
+     mute button that looks fine is the worst outcome. So a refusal
+     re-arms a one-shot listener and the next thing she touches starts
+     it. RESUME ONLY: no graph building, no seeking, nothing that would
+     make the retry differ from the play we just attempted. */
+  const RETRY_ON = ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'];
+  function retryResume(){
+    for (const t of RETRY_ON) removeEventListener(t, retryResume, true);
+    if (!pausedByHide) return;
+    pausedByHide = false;
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    audio.play().catch(() => {});
+  }
+  function armResumeRetry(){
+    for (const t of RETRY_ON) addEventListener(t, retryResume, true);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden){
+      if (!available || !audible || audio.paused) return;
+      pausedByHide = true;
+      audio.pause();
+      return;
+    }
+
+    if (!pausedByHide) return;
+    pausedByHide = false;
+
+    /* A backgrounded context comes back suspended on every platform
+       that suspends it at all, and a resumed element downstream of a
+       suspended context plays to nothing. Context first, then the
+       element. */
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+    const p = audio.play();
+    if (p && typeof p.catch === 'function'){
+      p.catch(() => {
+        // Refused. Put it back in the state armResumeRetry() expects,
+        // so the next tap picks the song up where she left it.
+        pausedByHide = true;
+        armResumeRetry();
+      });
     }
   });
 
